@@ -7,7 +7,7 @@ from typing import Optional, List
 from dotenv import load_dotenv
 from openai import OpenAI
 import random  # Make sure to import the random module at the top of your file
-from app.services.message_service import MessageService  # Ensure this import is at the top
+from backend.app.services.message_service import MessageService  # Ensure this import is at the top
 
 try:
     print("Debug: Attempting to import OpenAI...")

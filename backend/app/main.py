@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from pymongo import MongoClient
 import os
 import asyncio
-from app.bot.discord_bot import start_bot
+from backend.app.bot.discord_bot import start_bot
 
 # Load environment variables
 load_dotenv()
