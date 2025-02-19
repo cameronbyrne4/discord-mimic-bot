@@ -1,59 +1,45 @@
-import sqlite3
-import os
 import json
 from datetime import datetime
 
 class iMessageParser:
     def __init__(self):
-        # Default path to iMessage database on macOS
-        self.chat_db_path = os.path.expanduser("~/Library/Messages/chat.db")
-        
-    def extract_messages(self, limit=1000):
-        """Extract messages from iMessage database"""
-        if not os.path.exists(self.chat_db_path):
-            raise FileNotFoundError("iMessage database not found")
-            
-        # Create a copy of the database to avoid file permission issues
-        temp_db = "/tmp/chat_temp.db"
-        os.system(f"cp '{self.chat_db_path}' '{temp_db}'")
-        
+        self.input_file = 'app/scripts/my_1000_messages.json'
+
+    def parse_exported_messages(self, limit=1000):
+        """Parse messages from exported JSON file"""
         try:
-            conn = sqlite3.connect(temp_db)
-            cursor = conn.cursor()
-            
-            query = """
-            SELECT 
-                message.text,
-                message.date,
-                message.is_from_me,
-                handle.id
-            FROM message 
-            LEFT JOIN handle ON message.handle_id = handle.ROWID 
-            WHERE message.text IS NOT NULL 
-            ORDER BY message.date DESC 
-            LIMIT ?
-            """
-            
-            cursor.execute(query, (limit,))
-            messages = cursor.fetchall()
-            
-            # Process messages
-            processed_messages = []
-            for msg in messages:
-                if msg[0]:  # Only include messages with text
-                    processed_messages.append({
-                        'content': msg[0],
-                        'timestamp': self._convert_apple_time(msg[1]),
-                        'is_from_me': bool(msg[2]),
-                        'contact': msg[3] if msg[3] else 'unknown'
-                    })
-            
-            return processed_messages
-            
-        finally:
-            conn.close()
-            os.remove(temp_db)
-    
+            with open(self.input_file, 'r') as f:
+                messages = json.load(f)
+        except FileNotFoundError:
+            print(f"Error: The file {self.input_file} was not found.")
+            return []  # Return an empty list or handle as needed
+        except json.JSONDecodeError:
+            print(f"Error: The file {self.input_file} is not a valid JSON.")
+            return []  # Return an empty list or handle as needed
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            return []  # Return an empty list or handle as needed
+        
+        # Process messages
+        processed_messages = []
+        for msg in messages:
+            if msg.get('text'):  # Only include messages with text
+                processed_messages.append({
+                    'content': msg['text'],
+                    'timestamp': self._convert_apple_time(msg['date']),
+                    'is_from_me': bool(msg['is_from_me']),
+                    'contact': msg.get('id', 'unknown')
+                })
+        
+        # Sort by timestamp and limit
+        processed_messages = sorted(
+            processed_messages, 
+            key=lambda x: x['timestamp'], 
+            reverse=True
+        )[:limit]
+        
+        return processed_messages
+        
     def _convert_apple_time(self, apple_time):
         """Convert Apple's timestamp to ISO format"""
         if apple_time:
@@ -62,16 +48,15 @@ class iMessageParser:
             return datetime.fromtimestamp(unix_timestamp).isoformat()
         return None
 
-    def export_my_messages(self, output_file='my_messages.json'):
-        """Export only messages sent by me"""
+    def export_message_query(self, output_file='message_query.json'):
+        """Export processed messages to a new JSON file"""
         try:
-            all_messages = self.extract_messages()
-            my_messages = [msg for msg in all_messages if msg['is_from_me']]
+            message_query = self.parse_exported_messages()
             
             with open(output_file, 'w') as f:
-                json.dump(my_messages, f, indent=2)
+                json.dump(message_query, f, indent=2)
                 
-            return f"Exported {len(my_messages)} messages to {output_file}"
+            return f"Exported {len(message_query)} messages to {output_file}"
             
         except Exception as e:
             return f"Error exporting messages: {e}"
