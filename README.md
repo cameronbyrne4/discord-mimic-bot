@@ -1,5 +1,7 @@
 # Cam-Bot: A Personalized Discord AI Companion
 
+I built this while studying abroad at the National University of Singapore. With a 16 hour time zone difference to home, it's a struggle to keep in contact with my close friends due to our mismatched work and sleep schedules and the fact that we aren't in the same stages of the day. Like in the morning, we could typically talk about what we want to accomplish with the day. I made this project to allow my friends an outlet to talk to me when I'm not present, and learned some new technologies while working on it!
+
 A Discord bot that mimics a specific person's texting style and personality, complete with contextual memory and scheduled interactions. Built with Python, Discord.py, MongoDB, and OpenAI's GPT-3.5.
 
 ## 🌟 Features
