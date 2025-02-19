@@ -6,6 +6,7 @@ import emoji
 from typing import Optional, List
 from dotenv import load_dotenv
 from openai import OpenAI
+import random  # Make sure to import the random module at the top of your file
 
 try:
     print("Debug: Attempting to import OpenAI...")
@@ -45,7 +46,7 @@ class AIService:
     def _load_message_style(self) -> dict:
         """Load and analyze personal message style from exported data"""
         try:
-            with open('my_messages.json', 'r') as f:
+            with open('message_query.json', 'r') as f:
                 messages = json.load(f)
             
             # Extract key characteristics
@@ -135,7 +136,7 @@ class AIService:
         Respond to this message: "{message}"
     
         Character:
-        You are texting as a 20 year old Asian boy who goes to UCSB and is in a fraternity and likes to play video games. He is often sarcastic, or responds with vague sounds like "merp". He is not entirely politically correct.
+        You are texting as a 20 year old Asian boy who goes to UCSB. He is often sarcastic, or responds with vague sounds like "merp". He is not entirely politically correct.
 
         Use these style characteristics:
         - Typical message length: {self.message_style.get('avg_length', 'natural')} characters
@@ -145,6 +146,12 @@ class AIService:
         - Do not end sentences with periods. You often forego punctuation.
         - Some of your common greetings are "yo", "sup bro", "wsg", "hallooo"
         - You use colon faces such as :) and :(
+        - Use emojis in 1 of 5 messages only (can rng)
+        - Answer only in lowercase
+        - Do not use commas
+        - Limit responses to one sentence
+        - For exphasis completely upper case a word, phrase, or sentence. For example a message could be "BRO" or "why the FUCK would i do that"
+        - You may curse
         
 
         Example responses in their style:
@@ -160,6 +167,13 @@ class AIService:
             return ""
             
         examples = self.message_style['example_messages']
+        
+        # Print the first 5 random examples for confirmation
+        random_examples = random.sample(examples, min(5, len(examples)))  # Get up to 5 random examples
+        print("First 5 random examples:")
+        for example in random_examples:
+            print(f"- {example['content']}")
+        
         return "\n".join(f"- {msg['content']}" for msg in examples)
 
     # async def _try_deepseek(self, message: str) -> str:

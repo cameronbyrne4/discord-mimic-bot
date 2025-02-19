@@ -38,3 +38,8 @@ ENV/
 
 # Docker
 .docker/
+
+# Personal
+message_query.py
+my_messages.py
+my_1000_messages.py
