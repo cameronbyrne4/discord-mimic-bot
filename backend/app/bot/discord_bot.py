@@ -39,13 +39,33 @@ async def chat(ctx, *, message: str):
         await ctx.send("Sorry, I encountered an error. Please try again later.")
         print(f"Error in chat: {e}")
 
+# Will always be at the top and bottom of the hour
 @tasks.loop(minutes=30)
 async def scheduled_messages():
-    scheduled = await message_service.get_scheduled_messages()
-    for msg in scheduled:
-        channel = bot.get_channel(int(msg['channel_id']))
-        if channel:
-            await channel.send(msg['content'])
+    current_time = datetime.now()
+    pst_hour = (current_time.hour - 7) % 24  # Convert to PST from UTC
+    
+    # Morning message around 10 AM PST
+    if pst_hour == 10:
+        channels = bot.get_all_channels()
+        morning_msg = await ai_service.get_response(
+            "Generate a good morning message and ask what they're up to today", 
+            "scheduled_bot"
+        )
+        for channel in channels:
+            if isinstance(channel, discord.TextChannel):
+                await channel.send(morning_msg)
+    
+    # Night message around 1 AM PST
+    if pst_hour == 1:
+        channels = bot.get_all_channels()
+        night_msg = await ai_service.get_response(
+            "Generate a good night message and ask what they did today", 
+            "scheduled_bot"
+        )
+        for channel in channels:
+            if isinstance(channel, discord.TextChannel):
+                await channel.send(night_msg)
 
 @bot.command()
 async def hello(ctx):

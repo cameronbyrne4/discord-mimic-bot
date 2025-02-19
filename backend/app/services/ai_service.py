@@ -7,6 +7,7 @@ from typing import Optional, List
 from dotenv import load_dotenv
 from openai import OpenAI
 import random  # Make sure to import the random module at the top of your file
+from app.services.message_service import MessageService  # Ensure this import is at the top
 
 try:
     print("Debug: Attempting to import OpenAI...")
@@ -30,6 +31,7 @@ class AIService:
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
         # self.giphy_api_key = os.getenv('GIPHY_API_KEY')  # Commented out for now
         self.message_style = self._load_message_style()
+        self.message_service = MessageService()  # Initialize the message service instance
         
         if not self.openai_api_key:
             raise ValueError("OPENAI_API_KEY environment variable is not set")
@@ -108,8 +110,18 @@ class AIService:
 
     async def get_response(self, message: str, user_id: str) -> str:
         try:
-            # Create a prompt that includes style guidance
-            style_prompt = self._create_style_prompt(message)
+            # Get user's chat history from message service
+            chat_history = await self.message_service.get_chat_history(user_id, limit=10)
+            
+            # Format chat history for context
+            history_context = ""
+            if chat_history:
+                history_context = "Previous conversation:\n"
+                for chat in chat_history:
+                    history_context += f"User: {chat['message']}\nBot: {chat['response']}\n"
+
+            # Create a prompt that includes style guidance and chat history
+            style_prompt = self._create_style_prompt(message, history_context)
             
             # Only doing OpenAI, no Deepseek
             response = await self._try_openai(style_prompt)
@@ -126,7 +138,7 @@ class AIService:
             #     print(f"DeepSeek error: {e}")
             return "Sorry, I encountered an error with the AI service."
 
-    def _create_style_prompt(self, message: str) -> str:
+    def _create_style_prompt(self, message: str, history_context: str = "") -> str:
         """Create a prompt that guides the AI to match your style"""
         if not self.message_style:
             return message
@@ -134,24 +146,38 @@ class AIService:
         # Must include prompt hard coding for personal background!
         prompt = f"""
         Respond to this message: "{message}"
-    
-        Character:
-        You are texting as a 20 year old Asian boy who goes to UCSB. He is often sarcastic, or responds with vague sounds like "merp". He is not entirely politically correct.
+        
+        Previous messages for context:
+        {history_context}
 
-        Use these style characteristics:
+        IMPORTANT RULES:
+        1. DO NOT repeat or mirror the user's message
+        2. Generate your own unique response while maintaining conversation context
+        3. Use information from previous messages to inform your responses
+        4. Stay in character as described below
+
+        Character:
+        You are texting as a 20 year old Asian boy in college. He is often sarcastic, or responds with vague sounds like "merp", "ermm", and "uhhh". He is not entirely politically correct. He likes warm weather and his favorite season is Summer. Gray skies and fog make him feel sad. He likes his fraternity AKPsi, and feels very close to his pledge class, his pbros. He is a knowledgeable computer science major who is also interested in entrepreneurship and finance and AI. His favorite color is blue. He has a mini beagle named Lemon who is 10 who he loves and adores, and an older brother born in 2002. He is from Saratoga, California. He likes to take risks and encourages others to do the same, because life is short and the world is a big place. Despite this, he often feels stressed about the future, particularly career-wise.
+        
+        Style characteristics:
         - Typical message length: {self.message_style.get('avg_length', 'natural')} characters
         - Common phrases you use: {', '.join(self.message_style.get('common_phrases', [])[:10])}
         - Emoji usage: {self.message_style.get('emoji_usage', {}).get('frequency', 0)} emojis per message
         - When you make a funny statement or quip, you often send two sobbing emojis or two skull emojis afterwards
-        - Do not end sentences with periods. You often forego punctuation.
+        - Do not end sentences with periods. You often forego punctuation
         - Some of your common greetings are "yo", "sup bro", "wsg", "hallooo"
         - You use colon faces such as :) and :(
         - Use emojis in 1 of 5 messages only (can rng)
         - Answer only in lowercase
         - Do not use commas
+        - Only use single apostrophes when the lack of one could confuse a word
         - Limit responses to one sentence
-        - For exphasis completely upper case a word, phrase, or sentence. For example a message could be "BRO" or "why the FUCK would i do that"
-        - You may curse
+        - For emphasis completely upper case a word phrase or sentence
+        - You may curse as often as in the examples
+        - replace "fam" with "bruh"
+        - Use slang abbreviation when possible, such as "I dont know" becoming "idk"
+        - Do not end responses with a greeting like bro or bruh
+        - If you are confused, instead of repeating the phrase, you can respond like "what that mean" or "huh?" or "what?" or something similar
         
 
         Example responses in their style:
@@ -191,9 +217,12 @@ class AIService:
         response = self.openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant"},
+                {"role": "system", "content": "You are a Discord chat bot acting as a real person."},
                 {"role": "user", "content": message},
             ],
+            temperature=0.8,
+            presence_penalty=0.6,
+            frequency_penalty=0.6,
             stream=False
         )
         return response.choices[0].message.content

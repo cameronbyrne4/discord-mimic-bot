@@ -33,21 +33,25 @@ class MessageService:
         }
         self.db.chat_history.insert_one(chat_history)
 
+    # Used for context?
     async def get_chat_history(self, user_id: str, limit: int = 50):
         cursor = self.db.chat_history.find(
             {'user_id': user_id}
         ).sort('timestamp', -1).limit(limit)
         return list(cursor)
 
+    # Not really used
     def get_scheduled_messages(self):
         current_hour = datetime.utcnow().hour
         return list(self.db.scheduled_messages.find({
             'hour': current_hour
         }))
 
+    # Not really used
     def add_scheduled_message(self, message_data: dict):
         self.db.scheduled_messages.insert_one(message_data)
 
+    # Not really used
     def import_message_history(self, user_id: str, messages: list):
         if messages:
             formatted_messages = []
