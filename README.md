@@ -1,6 +1,6 @@
 # Cam-Bot: A Personalized Discord AI Companion
 
-https://youtu.be/9dGA6i9_-Bw
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/9dGA6i9_-Bw/0.jpg)](https://www.youtube.com/watch?v=9dGA6i9_-Bw)
 
 I built this while studying abroad at the National University of Singapore. With a 16 hour time zone difference to home, it's a struggle to keep in contact with my close friends due to our mismatched work and sleep schedules and the fact that we aren't in the same stages of the day. Like in the morning, we could typically talk about what we want to accomplish with the day. I made this project to allow my friends an outlet to talk to me when I'm not present, and learned some new technologies while working on it!
 
